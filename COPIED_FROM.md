@@ -32,5 +32,5 @@ Gitignored or untracked items in the Launchpad folder were left behind:
 
 - This copy has no Git remote. A new GitHub repository will be added as `origin` separately.
 - No deployment configuration existed in the source.
-- `.claude/launch.json` still uses Launchpad's ports (backend 8787, frontend 5173). Change them before running both projects at the same time.
+- Launchpad uses ports 8787 (backend) and 5173 (frontend). LocalizeKit uses 8788 and 5174, so both can run at once.
 - Launchpad branding remains in the source and has not been renamed yet.

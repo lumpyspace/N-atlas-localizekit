@@ -55,7 +55,7 @@ function parseProvider(value: string | undefined): ProviderKind {
 
 export function loadConfig(): AppConfig {
   return {
-    port: Number(process.env.PORT ?? 8787),
+    port: Number(process.env.PORT ?? 8788),
     provider: parseProvider(process.env.NATLAS_PROVIDER),
     natlasEndpoint: (process.env.NATLAS_ENDPOINT ?? "").trim(),
     natlasApiKey: (process.env.NATLAS_API_KEY ?? "").trim(),

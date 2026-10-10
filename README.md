@@ -69,16 +69,16 @@ docs/       Architecture + N-ATLAS integration guide
 cd backend
 cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 npm install
-npm run dev                   # http://localhost:8787
+npm run dev                   # http://localhost:8788
 
 # 2. Frontend (new terminal)
 cd frontend
 cp .env.example .env.local
 npm install
-npm run dev                   # http://localhost:5173
+npm run dev                   # http://localhost:5174
 ```
 
-Open <http://localhost:5173> and walk the workflow.
+Open <http://localhost:5174> and walk the workflow.
 
 ### Connecting real N-ATLAS (live mode)
 

@@ -1,7 +1,7 @@
 /**
  * Thin client for the N-ATLAS Launchpad backend REST API.
  *
- * In dev, Vite proxies /api to http://localhost:8787 (see vite.config.ts).
+ * In dev, Vite proxies /api to http://localhost:8788 (see vite.config.ts).
  * In production you can override the base URL with VITE_API_BASE_URL.
  */
 
