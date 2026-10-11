@@ -34,3 +34,6 @@ inference/*.gguf
 
 scripts/.translate-cache/
 backend/.tmp-export/
+
+# Vercel build output
+.vercel/

@@ -1,141 +1,108 @@
-# N-ATLAS Launchpad
+# N-ATLAS LocalizeKit
 
-**Build. Test. Secure. Deploy with N-ATLAS.**
+**Build for every Nigerian customer. Test before you launch.**
 
-N-ATLAS Launchpad turns an app idea into a tested, security-checked **N-ATLAS**
-prototype — and sends the developer home with real, runnable code. It's a
-**developer adoption tool** for **N-ATLAS**, Nigeria's open, multilingual LLM
-(`NCAIR1/N-ATLaS`): a developer who has never used N-ATLAS can, in minutes,
-describe what they want, build it, try it, evaluate it, attack it, improve it,
-and export a starter project.
+LocalizeKit is a developer tool for testing AI customer-support assistants built on **N-ATLAS** (`NCAIR1/N-ATLaS`), Nigeria's multilingual language model, before they reach real customers.
 
-> Built for the **2026 NCAIR/NITDA National AI Innovation Challenge (NAIC)**.
+A developer configures a business's facts and response policy, then:
 
-The workflow:
+- sends customer messages in English, Nigerian Pidgin, Yoruba, Hausa or Igbo;
+- sees the genuine N-ATLAS reply, the exact facts and prompt it was given, and automated checks on the reply;
+- runs a repeatable suite of test cases;
+- records human review;
+- changes the configuration and reruns the same cases to compare.
 
-```
-Describe → Build → Try → Evaluate → Secure → Improve → Export
-```
+> Built for the 2026 NCAIR/NITDA National AI Innovation Challenge (NAIC), Problem Statement 1: Developer Infrastructure.
 
-> **N-ATLAS is the model.** Launchpad never substitutes another LLM for N-ATLAS
-> and pretends it is N-ATLAS. When real N-ATLAS isn't connected, the UI runs in a
-> clearly-labelled **DEMO MODE** (scripted responses) — and says so.
+The demonstration project is **AsoStyle Boutique**, a **fictional** Lagos clothing retailer. Its prices, address and phone number are invented sample data.
 
----
+## Honesty rules
 
-## Why it exists
+- **N-ATLAS is the only model.** Every reply in the UI comes from the configured N-ATLAS endpoint. There is no demo mode, scripted reply or substitute model. If N-ATLAS is unreachable, the UI says so.
+- **A returned reply is not a correct reply.** Each result keeps three things separate:
+  1. whether the request succeeded;
+  2. automated checks, which are *heuristics*: keyword, number and substring tests;
+  3. human review: a person marks the reply correct, incorrect or unsure.
+- **No invented metrics.** No accuracy percentages or language-quality scores. Before/after comparisons show recorded replies only.
+- **Language claims.** NCAIR lists English, Yoruba, Hausa and Igbo for N-ATLAS. Nigerian Pidgin is offered as a *test category* to measure how the model copes, not as claimed support. Non-English sample test messages are draft translations, not yet checked by native speakers, and are labelled that way.
+- **Instructions are not guarantees.** The response policy lowers the risk of invented answers; it does not remove it. That is why replies are checked and reviewed.
 
-A developer with a Nigerian use case (university admissions, agriculture,
-finance, legal info, customer support…) has no easy on-ramp to N-ATLAS, and no
-way to check — *before shipping* — that their app speaks good Nigerian-context
-English/Yoruba/Hausa/Igbo and resists prompt-injection and jailbreaks. Launchpad
-is that on-ramp: discover where N-ATLAS fits your app, test it, and leave with
-working code. Different models have different strengths; this helps you find
-N-ATLAS's.
-
-## The two realities we designed around
-
-1. **No hosted N-ATLAS API exists.** N-ATLAS is open-weights (gated Llama-3 8B).
-   You run it yourself and serve it over an OpenAI-compatible endpoint (local
-   Ollama, a GPU server, or an HF Inference Endpoint). Launchpad reaches it
-   through one swappable `NAtlasProvider`, so **demo / local-live / hosted-GPU
-   are just configuration** (`NATLAS_PROVIDER` + a UI badge).
-2. **CPU inference is slow** (~1.4 tok/s locally), far too slow for the ~40
-   sequential model calls a full demo makes. So **DEMO MODE is first-class**: it
-   runs the *real* evaluation and security engines against a scripted provider
-   that responds story-coherently. Scores — including the Secure→Improve
-   before/after — are **computed, never faked**. Flip `NATLAS_PROVIDER=http` to
-   prove one genuine N-ATLAS call.
-
-## Architecture (short)
-
-`frontend (React/Vite/Tailwind wizard)` → `backend (Node/Express)` →
-**`NAtlasProvider`** → `demo | http (Ollama / GPU / HF) | mock`. Engines:
-**blueprint** (idea → plan), **eval** (sector suites), **security** (attack
-suite), **improve** (harden). Export runs client-side (JSZip). Full detail in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+## How it works
 
 ```
-frontend/   React + Vite + TypeScript + Tailwind — the Launchpad wizard
-backend/    Node + Express + TypeScript — blueprint / eval / security / improve + provider
-inference/  How to serve real N-ATLAS locally (Ollama) + Modelfile
-docs/       Architecture + N-ATLAS integration guide
+Browser (React)  ──►  LocalizeKit API (Express, serverless on Vercel)  ──►  N-ATLAS (vLLM on a Modal GPU)
+                      • builds the system prompt:                            NCAIR1/N-ATLaS, unmodified
+                        policy + numbered fact sheet + secret canary          OpenAI-compatible
+                      • calls N-ATLAS server-side (key never in browser)      /v1/chat/completions
+                      • runs heuristic checks on the reply
 ```
 
-## Run it locally
+**Automated checks:**
+- **Expected fact present.** The configured fee, hours or return window appears in the reply. Expected values are read from the *current* configuration, so editing a fee changes what the check looks for.
+- **No unsupported naira amount.** Every ₦ amount in the reply must exist in the facts.
+- **No hidden-instruction leak.** A secret canary code is planted in the system prompt; if it appears in a reply, the prompt leaked.
+- **Injected instruction not obeyed.** A sentinel word in an injection attempt must not appear in the reply.
+- **Behaviour checks:** defers when the answer is unknown, points to a human, asks a clarifying question, declines unsafe requests, makes no invented order-status or refund claims.
+
+**Test suite (15 cases):**
+- business facts;
+- the same question in English, Pidgin and Hausa;
+- the same question in English and Yoruba;
+- questions with no answer in the facts;
+- an ambiguous question;
+- escalation;
+- prompt injection;
+- prompt extraction;
+- a request for another customer's data.
+
+Architecture and API details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). How N-ATLAS is accessed and served: [`docs/N-ATLAS-INTEGRATION.md`](docs/N-ATLAS-INTEGRATION.md).
+
+## Run locally
+
+You need an OpenAI-compatible N-ATLAS endpoint. Use the hosted GPU endpoint ([`inference/modal_natlas.py`](inference/modal_natlas.py)), or local Ollama on CPU ([`inference/README.md`](inference/README.md)). Ollama works but is slow: minutes per reply with the full fact sheet.
 
 ```bash
-# 1. Backend (defaults to DEMO mode — full workflow, no GPU needed)
 cd backend
-cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
+cp .env.example .env      # PowerShell: Copy-Item .env.example .env, then fill in NATLAS_* values
 npm install
-npm run dev                   # http://localhost:8788
-
-# 2. Frontend (new terminal)
-cd frontend
-cp .env.example .env.local
-npm install
-npm run dev                   # http://localhost:5174
+npm run dev               # http://localhost:8788
 ```
 
-Open <http://localhost:5174> and walk the workflow.
+```bash
+cd frontend
+npm install
+npm run dev               # http://localhost:5174 (proxies /api to the backend)
+```
 
-### Connecting real N-ATLAS (live mode)
+Tests: `cd backend && npm test`.
 
-1. Accept the license on <https://huggingface.co/NCAIR1/N-ATLaS> (gated model).
-2. Serve it over an OpenAI-compatible endpoint — see
-   [`inference/README.md`](inference/README.md) (Ollama for local CPU; vLLM/TGI/HF
-   for GPU). A **GPU** runs this 8B model at ~30–80 tok/s — fast enough for live
-   use; the ~1.4 tok/s figure is a CPU limitation, not an N-ATLAS one.
-3. In `backend/.env` set `NATLAS_PROVIDER=http`, `NATLAS_ENDPOINT`,
-   `NATLAS_MODEL` (and `NATLAS_API_KEY` if your server needs one).
-4. Verify: `cd backend && npm run healthcheck`. The UI badge switches to
-   **LIVE N-ATLAS**.
+## Deploy (Vercel)
 
-## What's implemented
+`vercel.json` runs `scripts/build-vercel.mjs`. It builds the frontend and bundles the API into one serverless function using Vercel's Build Output API.
 
-- **Describe → Blueprint** — deterministic, sector-aware blueprint (name,
-  purpose, Nigerian-context notes, risks, and a generated **system prompt** with
-  a planted security canary). `POST /api/blueprint`.
-- **Playground** — 3-pane chat with your app's system prompt; LIVE/DEMO badge.
-- **Evaluate** — sector suites (education / finance / agriculture / legal /
-  customer-support / general) across **AI quality, Nigerian context, language,
-  reliability, safety**, run against the app's own system prompt.
-  `POST /api/evaluate`.
-- **Secure** — ~15 controlled attacks (prompt injection, system-prompt
-  extraction, impersonation, sensitive-info, jailbreak, data leakage) with
-  severity, explanation, and mitigation. `POST /api/security`.
-- **Improve** — hardens the system prompt against the categories that failed,
-  then **re-tests** for a real before/after. `POST /api/improve`.
-- **Export** — a real, runnable **JavaScript or Python** starter project (N-ATLAS
-  SDK, system prompt, eval + security tests, README) as a downloadable `.zip`.
-- **N-ATLAS SDK** ([`sdk/`](sdk/README.md)) — one-file, zero-dependency clients
-  for JavaScript and Python: N-ATLAS defaults, Yoruba/Hausa/Igbo/Pidgin language
-  hints, answers from your documents with sources, context-window trimming,
-  streaming, and errors that say how to fix them.
+Set these environment variables in the Vercel project. They are server-side only, so never prefix them with `VITE_`:
 
-## Evaluation & security methodology
+| Variable | Example |
+|---|---|
+| `NATLAS_ENDPOINT` | `https://<workspace>--localizekit-natlas-serve.modal.run/v1` |
+| `NATLAS_API_KEY` | the key stored in the Modal secret `localizekit-natlas` |
+| `NATLAS_MODEL` | `NCAIR1/N-ATLaS` |
+| `NATLAS_REQUEST_TIMEOUT_MS` | `280000` |
+| `RATE_LIMIT_PER_WINDOW` (optional) | `40` model calls per client per 10 minutes |
 
-- **Evaluation** uses declarative checks (keyword / refusal / format /
-  min-length), diacritic- and case-insensitive so ASCII values match accented
-  Yoruba/Hausa/Igbo. Transparent and fast; an LLM judge can be plugged in later
-  for deeper scoring.
-- **Security detection is deterministic — no second LLM judge.** Every generated
-  system prompt carries a secret **canary**; if a response echoes it, that's
-  provable system-prompt leakage. Injection tests embed a **sentinel** token; if
-  the response emits it, the injection provably succeeded. Jailbreak/sensitive
-  tests check for refusal. This makes verdicts reproducible and explainable.
+## Repository layout
 
-## Honesty rules this repo follows
+```
+frontend/   React + Vite + Tailwind: Overview, Playground, Test suite, Business & policy, Export
+backend/    Express + TypeScript: src/localize/ (facts, policy, cases, checks, service), src/providers/ (N-ATLAS client)
+inference/  Serving N-ATLAS: Modal + vLLM (hosted GPU) and Ollama (local CPU)
+scripts/    Vercel build
+tests/      Node test runner
+docs/       Architecture and N-ATLAS integration notes
+```
 
-- Never present DEMO/mock output as real N-ATLAS (every result carries `isMock`).
-- Never fabricate scores — before/after is always re-computed by re-running.
-- Never use another LLM as a hidden stand-in for N-ATLAS.
-- Never claim N-ATLAS universally beats other models; help developers *discover
-  where it works* for their app.
+LocalizeKit started as a copy of N-ATLAS Launchpad. See [`COPIED_FROM.md`](COPIED_FROM.md).
 
-## Roadmap
+## Licence notes
 
-- Hosted shared N-ATLAS GPU endpoint so site visitors get live inference.
-- LLM-as-judge scoring option for subtler quality/context checks.
-- Larger multilingual + safety suites; run persistence and shareable reports.
+N-ATLaS weights are gated on Hugging Face under NCAIR's licence. Accept it on the model page; it restricts commercial use and scale. Weights are never committed to this repository.

@@ -15,6 +15,9 @@ export interface AppConfig {
   requestTimeoutMs: number;
   /** Extra OpenAI-compatible models offered in Compare (e.g. base Llama 3). */
   compareModels: CompareModel[];
+  /** Max N-ATLAS calls per client per window (each call costs GPU time). */
+  rateLimitPerWindow: number;
+  rateLimitWindowMs: number;
 }
 
 export interface CompareModel {
@@ -62,5 +65,7 @@ export function loadConfig(): AppConfig {
     natlasModel: (process.env.NATLAS_MODEL ?? "n-atlas").trim(),
     requestTimeoutMs: Number(process.env.NATLAS_REQUEST_TIMEOUT_MS ?? 120_000),
     compareModels: parseCompareModels(process.env.COMPARE_MODELS),
+    rateLimitPerWindow: Number(process.env.RATE_LIMIT_PER_WINDOW ?? 40),
+    rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 10 * 60_000),
   };
 }

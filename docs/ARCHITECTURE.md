@@ -1,88 +1,68 @@
 # Architecture
 
-N-ATLAS Launchpad is a small, two-part system (React frontend + Express backend)
-kept deliberately simple. A developer flows through a linear wizard; each step
-calls a focused backend engine; everything reaches the model through one
-swappable provider.
+LocalizeKit has three parts. The browser never contacts N-ATLAS and never sees a credential.
 
 ```
- User
-  │
-  ▼
-┌──────────────────────────────────────────────────────────────┐
-│ Launchpad UI  (React + Vite + Tailwind, wizard)              │
-│ Describe → Build → Try → Evaluate → Secure → Improve → Export │
-│ central ProjectContext (localStorage)                         │
-└───────────────┬──────────────────────────────────────────────┘
-                │ REST /api
-                ▼
-┌──────────────────────────────────────────────────────────────┐
-│ backend (Node + Express + TypeScript)                         │
-│  blueprint │ eval (sector suites) │ security │ improve/harden  │
-└───────────────┬──────────────────────────────────────────────┘
-                │
-         NAtlasProvider (one abstraction)
-          ├─ ScriptedDemoProvider  (DEMO — scripted, isMock)
-          ├─ HttpNAtlasProvider    (LIVE — Ollama / GPU / HF Endpoint)
-          └─ MockNAtlasProvider    (placeholder for raw UI dev)
-
-Export (Describe→…→Export) is generated client-side (JSZip) → .zip starter kit.
+┌─────────────────────────────┐   /api (same origin)   ┌──────────────────────────────┐   HTTPS + Bearer key   ┌───────────────────────────┐
+│ Frontend (React/Vite)       │ ─────────────────────► │ API (Express, Vercel func)   │ ─────────────────────► │ N-ATLAS on Modal GPU      │
+│ Overview · Playground ·     │                        │ validate input, rate limit   │                        │ vLLM serving the          │
+│ Test suite · Business &     │ ◄───────────────────── │ build prompt (facts+canary)  │ ◄───────────────────── │ unmodified NCAIR1/N-ATLaS │
+│ policy · Export             │   reply + checks       │ call N-ATLAS, run checks     │   chat completion      │ (/v1/chat/completions)    │
+│ state in localStorage       │                        │                              │                        │ scales to zero when idle  │
+└─────────────────────────────┘                        └──────────────────────────────┘                        └───────────────────────────┘
 ```
 
-## Request flow per step
+## Request flow (`POST /api/ask` and `POST /api/run-case`)
 
-- **Describe → Build:** `POST /api/blueprint { description }` → classify sector
-  (keywords) → fill a template → synthesize a **system prompt with a planted
-  canary**. Deterministic; no model call.
-- **Try:** `POST /api/generate { prompt, options:{ system } }` → provider.
-- **Evaluate:** `POST /api/evaluate { sector, systemPrompt }` → `buildAppSuite`
-  runs every case against the app's own system prompt (runner `systemOverride`),
-  scored by declarative checks.
-- **Secure:** `POST /api/security { systemPrompt }` → ~15 attacks → deterministic
-  detectors (canary leak / obeyed sentinel / refusal) → severity-weighted score.
-- **Improve:** `POST /api/improve { systemPrompt, failedCategories }` → appends a
-  `SECURITY DIRECTIVES` block → client re-runs `/api/security` for a real
-  before/after.
-- **Export:** client builds a runnable JS/Python project from project state.
+1. **Validate.**
+   - The message must be 1–1,000 characters.
+   - The language must be one of `en`, `yo`, `ha`, `ig`, `pid`.
+   - The business configuration must have the right shape and be at most 20 KB.
+   - The policy must be at most 4,000 characters.
+   - Requests to this API must be at most 64 KB.
+2. **Rate limit.** 40 model calls per client per 10 minutes by default, kept in memory per server instance.
+3. **Build the system prompt** (`backend/src/localize/policy.ts`). It contains:
+   - the policy rules;
+   - the business configuration, flattened into numbered facts (`[F1]`…`[F30]`);
+   - a secret canary code.
+
+   The whole fact sheet is always sent; it's about 30 short facts. Keyword retrieval (`matchFacts`) only *highlights* likely-relevant facts for the developer. It's English-keyword based and weak for Yoruba, Hausa and Igbo, and the UI says so.
+4. **Call N-ATLAS** (`backend/src/providers/HttpNAtlasProvider.ts`) with temperature 0.2 and at most 320 reply tokens.
+5. **Check the reply** (`backend/src/localize/checks.ts`):
+   - case-specific checks;
+   - two baseline checks on every reply (no unsupported naira amount; no hidden-instruction leak).
+6. **Verdict.**
+   - `request-failed`: no reply came back.
+   - `failed-check`: a heuristic check failed.
+   - `passed-checks`: every heuristic check passed.
+   - `needs-review`: there are no case-specific checks.
+
+   Human review is stored separately, in the browser.
+
+## API
+
+| Method | Path | Purpose | Calls N-ATLAS |
+|---|---|---|---|
+| GET | `/api/status` | Is an endpoint configured? | no |
+| POST | `/api/status/check` | One-word test request | yes |
+| GET | `/api/sample` | Sample business, policy, test cases, languages | no |
+| POST | `/api/ask` | `{ message, language, business?, policy? }` | yes |
+| POST | `/api/run-case` | `{ case: { message, language, checks }, business?, policy? }` | yes |
+
+**Error handling.** Errors come back as `{ error }` with status 400, 413, 429 or 500. Model failures return `ok: false` with an actionable message: missing endpoint, rejected credentials, timeout or cold start, or unreachable. Upstream response bodies and keys are never forwarded. The logger redacts bearer tokens and `hf_` tokens.
+
+## Security choices
+
+- Credentials live only in server environment variables. `VITE_` variables are not used, and the build output is scanned for the key during release checks.
+- Same-origin API, so no CORS is enabled.
+- Security headers on all responses. Static pages also get a strict Content-Security-Policy.
+- Launchpad's runtime "switch endpoint" route was removed, so visitors cannot point the server at arbitrary URLs.
+- Prompt-injection and extraction resistance is *measured* by test cases (canary and sentinel), not assumed.
 
 ## Why these choices
 
-- **Provider abstraction (`NAtlasProvider`).** N-ATLAS has no official API, so the
-  way we reach it changes (demo now, local CPU, GPU later). The engines never
-  change when hosting does — swap the implementation, not the app. Mode =
-  `NATLAS_PROVIDER` env; the UI badge reads `provider.isMock`/`name`.
-- **Demo mode is first-class and honest.** `ScriptedDemoProvider` returns
-  story-coherent responses and branches on whether the system prompt has been
-  hardened — so the *real* eval/security engines produce a *real* before/after
-  without a GPU. Every result carries `isMock: true`.
-- **Deterministic security detection.** A secret **canary** in each system prompt
-  turns "did it leak?" into a substring check; injected **sentinels** turn "did
-  it obey?" into one too. No second LLM judge needed; verdicts are reproducible.
-- **OpenAI chat-completions wire format.** Ollama, vLLM, TGI and HF Endpoints all
-  speak it, so one HTTP client reaches them all — hosting is a `.env` change.
-- **Client-side export.** The ZIP is built in-browser (JSZip), so export works
-  even on a static deploy with no backend.
-
-## Folder layout
-
-```
-n-atlas-launchpad/   (repo dir: n-atlas-forge)
-├─ frontend/
-│  └─ src/
-│     ├─ screens/     Landing, Describe, Blueprint, Evaluate, Secure, Improve, Export
-│     ├─ components/   Playground, Stepper, ModeBadge
-│     ├─ state/        ProjectContext (wizard state, localStorage)
-│     ├─ ui/           Tailwind primitives (Button, Card, Badge, …)
-│     └─ export/       starter-kit templates + JSZip builder
-├─ backend/
-│  └─ src/
-│     ├─ blueprint/    idea → blueprint (sectors, generate)
-│     ├─ eval/         types, checks, suites (+ sector suites), runner
-│     ├─ security/     types, detectors, attack suite, runner
-│     ├─ improve/      harden
-│     ├─ providers/    NAtlasProvider + Http/Mock/ScriptedDemo + factory
-│     ├─ shared/       prompt canary + hardening marker utilities
-│     └─ routes/       health, generate, blueprint, evaluate, security, improve
-├─ inference/   How to serve real N-ATLAS locally (Ollama) + Modelfile
-└─ docs/        This file + the N-ATLAS integration guide
-```
+- **Self-hosted N-ATLAS on Modal.** No public N-ATLAS API key is available to applicants: NAIC lists credentials as a benefit for shortlisted teams. So we serve the official gated weights with vLLM on a 24 GB GPU (L4). See [`N-ATLAS-INTEGRATION.md`](N-ATLAS-INTEGRATION.md).
+- **Whole fact sheet in context, not a vector database.** A small business fits easily in N-ATLAS's 8k context. It's simpler and fully inspectable, and not dependent on English keywords for non-English questions.
+- **Heuristic checks, not an LLM judge.** Deterministic, explainable and free. Their limits are stated in the UI.
+- **Browser storage for runs and reviews.** No accounts or database are needed for the MVP. Results are exported as JSON for evidence.
+- **One Express app for local and Vercel** (`backend/src/app.ts`), bundled by esbuild for Vercel. What is tested locally is what runs in production.
