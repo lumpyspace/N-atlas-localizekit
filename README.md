@@ -55,6 +55,16 @@ Browser (React)  ──►  LocalizeKit API (Express, serverless on Vercel)  ─
 - prompt extraction;
 - a request for another customer's data.
 
+## Ship it: the website starter kit
+
+The **Export** screen downloads a ready-to-run kit for the assistant you tested:
+- `server.mjs`: a zero-dependency Node server that sends the **same** prompt to *your own* N-ATLAS endpoint. A test checks it matches the prompt LocalizeKit tests.
+- **Output guardrails:** block leaked hidden instructions; block naira amounts not in the facts; strip `[F12]` citations.
+- `widget.js`: a one-line chat bubble for any website, with a CORS allow-list, rate limiting and input limits.
+- A demo page, your facts and policy, the Modal script to host N-ATLAS, and a README.
+
+It was tested end to end against the hosted N-ATLAS, including a follow-up question that relied on conversation history. WhatsApp is on the roadmap, not in the kit.
+
 Architecture and API details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). How N-ATLAS is accessed and served: [`docs/N-ATLAS-INTEGRATION.md`](docs/N-ATLAS-INTEGRATION.md).
 
 ## Run locally
@@ -94,6 +104,7 @@ Set these environment variables in the Vercel project. They are server-side only
 
 ```
 frontend/   React + Vite + Tailwind: Overview, Playground, Test suite, Business & policy, Export
+            src/starter/: the exported website kit (server, guardrails, widget)
 backend/    Express + TypeScript: src/localize/ (facts, policy, cases, checks, service), src/providers/ (N-ATLAS client)
 inference/  Serving N-ATLAS: Modal + vLLM (hosted GPU) and Ollama (local CPU)
 scripts/    Vercel build

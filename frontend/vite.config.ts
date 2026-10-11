@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5174,
+    // The Export screen bundles ../inference/modal_natlas.py into the starter kit.
+    fs: { allow: [".."] },
     proxy: {
       "/api": {
         target: "http://localhost:8788",
