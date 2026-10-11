@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A fictional Lagos fashion shop used to demonstrate a customer-support assistant built and tested with N-ATLAS LocalizeKit." />
+    <title>{{name}} — sample shop (fictional)</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%237c2d12%22/%3E%3Ctext x=%2216%22 y=%2221%22 font-family=%22Georgia%22 font-size=%2215%22 fill=%22white%22 text-anchor=%22middle%22%3EA%3C/text%3E%3C/svg%3E" />
+    <style>
+      :root { --ink: #1c1917; --muted: #57534e; --line: #e7e5e4; --bg: #fafaf9; --accent: #7c2d12; --accent-2: #b45309; --card: #ffffff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
+      a { color: var(--accent); }
+      .notice { background: #1c1917; color: #f5f5f4; font-size: 13px; text-align: center; padding: 8px 16px; }
+      .notice a { color: #fdba74; }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+      header { border-bottom: 1px solid var(--line); background: #fff; }
+      header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap; }
+      .logo { font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 700; letter-spacing: 0.02em; color: var(--accent); text-decoration: none; }
+      nav { display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap; }
+      nav a { color: var(--muted); text-decoration: none; }
+      nav a:hover { color: var(--ink); }
+      .hero { background: linear-gradient(120deg, #7c2d12 0%, #9a3412 55%, #b45309 100%); color: #fff7ed; }
+      .hero .wrap { padding-top: 64px; padding-bottom: 64px; }
+      .hero h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(30px, 5vw, 48px); line-height: 1.15; margin: 0 0 12px; max-width: 16ch; }
+      .hero p { font-size: 17px; max-width: 52ch; margin: 0 0 24px; color: #fed7aa; }
+      .btn { display: inline-block; background: #fff; color: var(--accent); font-weight: 700; padding: 11px 18px; border-radius: 10px; text-decoration: none; border: 0; cursor: pointer; font-size: 15px; }
+      section { padding: 56px 0; }
+      h2 { font-family: Georgia, "Times New Roman", serif; font-size: 28px; margin: 0 0 8px; }
+      .lead { color: var(--muted); margin: 0 0 28px; max-width: 60ch; }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+      .swatch { height: 120px; border-radius: 10px; margin-bottom: 14px; }
+      .s1 { background: repeating-linear-gradient(45deg, #9a3412 0 12px, #c2410c 12px 24px); }
+      .s2 { background: repeating-linear-gradient(-45deg, #065f46 0 10px, #047857 10px 20px, #fbbf24 20px 24px); }
+      .s3 { background: repeating-linear-gradient(90deg, #1e3a8a 0 14px, #1d4ed8 14px 28px, #f5f5f4 28px 32px); }
+      .card h3 { margin: 0 0 6px; font-size: 18px; }
+      .card p { margin: 0; color: var(--muted); font-size: 15px; }
+      table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-size: 15px; }
+      th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+      th { background: #f5f5f4; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+      tr:last-child td { border-bottom: 0; }
+      .two { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+      ul.clean { list-style: none; padding: 0; margin: 0; }
+      ul.clean li { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+      .ask { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px; padding: 20px; }
+      .ask code { background: #fff; border: 1px solid #fed7aa; border-radius: 6px; padding: 2px 6px; font-size: 14px; }
+      footer { border-top: 1px solid var(--line); background: #fff; font-size: 14px; color: var(--muted); }
+      footer .wrap { padding-top: 28px; padding-bottom: 96px; }
+      .small { font-size: 13px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="notice">
+      Fictional sample shop. {{name}} is not a real business. It demonstrates a support assistant built and tested with
+      <a href="{{toolUrl}}">N-ATLAS LocalizeKit</a>.
+    </div>
+    <header>
+      <div class="wrap">
+        <a class="logo" href="#">{{name}}</a>
+        <nav aria-label="Main">
+          <a href="#collections">Collections</a>
+          <a href="#delivery">Delivery &amp; returns</a>
+          <a href="#visit">Visit &amp; contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Nigerian fashion, ready-to-wear and made to measure.</h1>
+        <p>Agbada, buba, iro and aso-ebi for every occasion, from our Lekki studio to anywhere in Nigeria.</p>
+        <button class="btn" type="button" data-open-chat>Ask our assistant</button>
+      </div>
+    </div>
+
+    <main>
+      <section id="collections">
+        <div class="wrap">
+          <h2>Collections</h2>
+          <p class="lead">Ready-to-wear in sizes S to XXL, group orders for celebrations, and custom tailoring from your measurements.</p>
+          <div class="grid">
+            <div class="card"><div class="swatch s1" aria-hidden="true"></div><h3>Ready-to-wear</h3><p>Everyday and occasion pieces, dispatched the same business day when confirmed before noon.</p></div>
+            <div class="card"><div class="swatch s2" aria-hidden="true"></div><h3>Aso-ebi group orders</h3><p>Matching outfits for your celebration. Minimum 6 pieces, 10% off.</p></div>
+            <div class="card"><div class="swatch s3" aria-hidden="true"></div><h3>Custom tailoring</h3><p>Made from your measurements in 7–10 business days. Custom pieces can't be returned.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="delivery" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+        <div class="wrap">
+          <h2>Delivery &amp; returns</h2>
+          <p class="lead">{{freeDelivery}} {{deliveryNotes}}</p>
+          <div class="two">
+            <table>
+              <thead><tr><th>Delivery to</th><th>Fee</th><th>Time</th></tr></thead>
+              <tbody>{{deliveryRows}}</tbody>
+            </table>
+            <div>
+              <ul class="clean">{{returnsItems}}</ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="visit">
+        <div class="wrap two">
+          <div>
+            <h2>Opening hours</h2>
+            <ul class="clean">{{hoursItems}}</ul>
+            <p class="small">{{location}}</p>
+          </div>
+          <div>
+            <h2>Talk to us</h2>
+            <p>WhatsApp {{whatsapp}} · <a href="mailto:{{email}}">{{email}}</a><br /><span class="small">{{humanHours}}</span></p>
+            <div class="ask">
+              <strong>Try the assistant (bottom-right).</strong> It answers only from this shop's facts, using N-ATLAS. Ask in English, Pidgin, Yoruba, Hausa or Igbo, for example:
+              <p><code>Abeg how much una dey charge to deliver go Abuja?</code></p>
+              <p class="small" style="margin:0">It cannot see orders or process refunds; for those it will point you to a person. AI answers can be wrong.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p><strong>{{name}}</strong> is fictional sample data. Its prices, address, phone number and email are invented.</p>
+        <p>The chat assistant on this page is the exact starter kit exported from <a href="{{toolUrl}}">N-ATLAS LocalizeKit</a>, running unchanged. Replies are generated by N-ATLAS (<code>NCAIR1/N-ATLaS</code>) on a GPU that sleeps when idle, so the first reply after a quiet period can take 2–3 minutes.</p>
+      </div>
+    </footer>
+
+    <script src="/widget.js" data-title="{{name}}" data-color="#7c2d12" data-greeting="Hello! I'm the AsoStyle assistant. Ask me about delivery fees, payments, returns or opening hours. You can write in English, Pidgin, Yoruba, Hausa or Igbo." defer></script>
+    <script src="/shop.js" defer></script>
+  </body>
+</html>

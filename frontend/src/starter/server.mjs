@@ -41,7 +41,12 @@ export function configFromEnv(env = process.env) {
   };
 }
 
-export function createAssistantServer(cfg, { business, policy, files = {} }) {
+export function createAssistantServer(cfg, opts) {
+  return createServer(createChatHandler(cfg, opts));
+}
+
+/** The request handler on its own, for serverless hosts that call (req, res). */
+export function createChatHandler(cfg, { business, policy, files = {} }) {
   // A fresh secret per server start: if a reply ever contains it, the prompt leaked.
   const canary = `ATLAS-SENTINEL-${randomBytes(4).toString("hex").toUpperCase()}`;
   const built = buildSystemPrompt(policy, business, canary);
@@ -96,7 +101,7 @@ export function createAssistantServer(cfg, { business, policy, files = {} }) {
     }
   }
 
-  return createServer(async (req, res) => {
+  return async (req, res) => {
     const origin = req.headers.origin;
     const cors =
       origin && cfg.allowedOrigins.includes(origin)
@@ -148,7 +153,7 @@ export function createAssistantServer(cfg, { business, policy, files = {} }) {
       console.error(`[natlas] ${e.name === "AbortError" ? "timed out" : e.message}`);
       return send(res, 502, { error: "The assistant is unavailable right now. Please try again shortly." }, cors);
     }
-  });
+  };
 }
 
 // Run directly: `node server.mjs`

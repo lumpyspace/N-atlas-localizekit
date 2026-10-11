@@ -1,0 +1,95 @@
+{
+  "name": "AsoStyle Boutique",
+  "description": "a fictional Lagos clothing retailer selling ready-to-wear and custom-tailored Nigerian fashion",
+  "hours": {
+    "Monday": "9:00am – 6:00pm",
+    "Tuesday": "9:00am – 6:00pm",
+    "Wednesday": "9:00am – 6:00pm",
+    "Thursday": "9:00am – 6:00pm",
+    "Friday": "9:00am – 6:00pm",
+    "Saturday": "10:00am – 4:00pm",
+    "Sunday": "Closed"
+  },
+  "location": "Shop 4, Example Plaza, Lekki, Lagos (fictional address)",
+  "delivery": {
+    "zones": [
+      {
+        "zone": "Lagos Mainland",
+        "fee": 3000,
+        "time": "1–2 business days"
+      },
+      {
+        "zone": "Lagos Island",
+        "fee": 3500,
+        "time": "1–2 business days"
+      },
+      {
+        "zone": "Abuja",
+        "fee": 5500,
+        "time": "3–5 business days"
+      },
+      {
+        "zone": "Port Harcourt",
+        "fee": 6000,
+        "time": "3–5 business days"
+      },
+      {
+        "zone": "Other Nigerian states",
+        "fee": 7000,
+        "time": "4–7 business days"
+      }
+    ],
+    "freeDeliveryRule": "Free delivery within Lagos for orders of ₦100,000 or more.",
+    "notes": "We do not deliver outside Nigeria."
+  },
+  "payments": [
+    "Bank transfer",
+    "Debit card through the website checkout",
+    "Pay on delivery — Lagos only, for orders under ₦50,000"
+  ],
+  "orderProcessing": [
+    "Ready-to-wear orders confirmed before 12 noon are dispatched the same business day.",
+    "Custom-tailored orders take 7–10 business days before dispatch."
+  ],
+  "returns": {
+    "windowDays": 7,
+    "conditions": [
+      "Items must be unworn, unwashed and have their tags attached.",
+      "Exchanges for a different size are allowed within the return window.",
+      "The customer pays return delivery unless the item arrived damaged or wrong."
+    ],
+    "refunds": "Refunds go back to the original payment method within 5–7 business days after the returned item is received and inspected.",
+    "exclusions": [
+      "Custom-tailored items cannot be returned or refunded."
+    ]
+  },
+  "contact": {
+    "whatsapp": "0800 000 0000 (fictional number)",
+    "email": "support@asostyle.example",
+    "humanHours": "A human agent replies during opening hours, Monday to Saturday."
+  },
+  "escalation": [
+    "Damaged, faulty or wrong items",
+    "Payment deducted but no order confirmation",
+    "Complaints or requests to speak to a person"
+  ],
+  "limits": [
+    "The assistant cannot check order status or tracking.",
+    "The assistant cannot process, approve or confirm refunds.",
+    "The assistant cannot see customer accounts or other customers' details."
+  ],
+  "faqs": [
+    {
+      "q": "What sizes do you stock?",
+      "a": "Ready-to-wear comes in sizes S to XXL. Custom tailoring is available from your measurements."
+    },
+    {
+      "q": "Do you take aso-ebi group orders?",
+      "a": "Yes. Group orders need a minimum of 6 pieces and get a 10% discount."
+    },
+    {
+      "q": "How should I care for the fabrics?",
+      "a": "Hand wash cold or dry clean. Do not bleach."
+    }
+  ]
+}

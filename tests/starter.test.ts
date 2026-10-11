@@ -110,3 +110,10 @@ test("starter server: N-ATLAS down gives a clear 502, not a crash", async () => 
     app.close();
   }
 });
+
+test("live sample shop uses LocalizeKit's sample configuration", async () => {
+  const { readFileSync } = await import("node:fs");
+  const shop = JSON.parse(readFileSync(new URL("../examples/sample-shop/business.json", import.meta.url), "utf8"));
+  assert.deepEqual(shop, SAMPLE_BUSINESS);
+  assert.equal(readFileSync(new URL("../examples/sample-shop/policy.md", import.meta.url), "utf8"), DEFAULT_POLICY);
+});

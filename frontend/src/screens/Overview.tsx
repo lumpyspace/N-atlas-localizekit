@@ -6,6 +6,8 @@ import { IconArrowRight, IconBeaker, IconChat, IconCheck, IconRefresh, IconShiel
 import { type Run, useStore } from "../store";
 import { Badge, Button, Card, CardHeader, LangPills, SampleTag, seconds } from "../ui";
 
+export const SAMPLE_SHOP_URL = "https://asostyle-sample-shop.vercel.app";
+
 const QUICK: { lang: LangCode; text: string }[] = [
   { lang: "pid", text: "I don send the money since, but e never enter. Wetin I go do?" },
   { lang: "en", text: "How much is delivery to Port Harcourt?" },
@@ -50,6 +52,14 @@ export default function Overview({ go }: { go: (r: Route) => void }) {
                 Open playground <IconArrowRight className="h-4 w-4" />
               </button>
             </div>
+            <a
+              href={SAMPLE_SHOP_URL}
+              target="_blank"
+              rel="noopener"
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-forge-400 hover:text-forge-200"
+            >
+              See the exported assistant live on a sample shop website <IconArrowRight className="h-3.5 w-3.5" />
+            </a>
           </div>
 
           <form onSubmit={tryIt} className="rounded-xl bg-white/[0.06] p-4 ring-1 ring-white/10 sm:p-5">

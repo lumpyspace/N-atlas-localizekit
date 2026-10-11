@@ -1,13 +1,14 @@
 import JSZip from "jszip";
 import { useState } from "react";
 import modalScript from "../../../inference/modal_natlas.py?raw";
-import { IconCode, IconDownload, IconShield } from "../icons";
+import { IconArrowRight, IconCode, IconDownload, IconShield } from "../icons";
 import coreSrc from "../starter/core.mjs?raw";
 import envExample from "../starter/env.example?raw";
 import indexHtml from "../starter/index.html?raw";
 import serverSrc from "../starter/server.mjs?raw";
 import widgetSrc from "../starter/widget.js?raw";
 import { useStore } from "../store";
+import { SAMPLE_SHOP_URL } from "./Overview";
 import { Badge, Button, Card, CardHeader, ErrorNote, Spinner } from "../ui";
 
 export default function Export() {
@@ -109,6 +110,16 @@ export default function Export() {
       </div>
 
       <div className="space-y-6">
+        <Card className="overflow-hidden">
+          <div className="bg-night-900 px-5 py-5 text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-forge-400">Live example</p>
+            <p className="mt-1 text-[15px] font-semibold">This kit, deployed unchanged on a sample shop website</p>
+            <p className="mt-1 text-sm text-slate-300">A fictional AsoStyle page with the chat bubble, talking to N-ATLAS through the exported server.</p>
+            <a href={SAMPLE_SHOP_URL} target="_blank" rel="noopener" className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:bg-slate-100">
+              Open the sample shop <IconArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </Card>
         <Card>
           <CardHeader icon={<IconShield className="h-4 w-4" />} title="What the server adds" />
           <ul className="space-y-3 px-5 py-4 text-sm text-slate-600">
