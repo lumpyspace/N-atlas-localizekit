@@ -58,9 +58,11 @@ def serve():
         "--served-model-name", MODEL,
         "--host", "0.0.0.0",
         "--port", str(PORT),
-        "--api-key", os.environ["NATLAS_API_KEY"],
         "--dtype", "bfloat16",
         "--max-model-len", "8192",
         "--gpu-memory-utilization", "0.90",
     ]
-    subprocess.Popen(cmd)
+    # Pass the key by environment, not on the command line: vLLM logs its CLI
+    # arguments at startup, which would put the key in the logs.
+    env = {**os.environ, "VLLM_API_KEY": os.environ["NATLAS_API_KEY"]}
+    subprocess.Popen(cmd, env=env)

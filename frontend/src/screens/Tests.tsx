@@ -2,10 +2,8 @@ import { Fragment, useMemo, useState } from "react";
 import type { AskResult, TestCase } from "../api";
 import { ResultView } from "../components/ResultView";
 import { type Run, reviewKey, useStore } from "../store";
-import { Badge, Button, Card, CardHeader, Empty, ErrorNote, seconds, Spinner, VerdictBadge } from "../ui";
-import { RunSummary } from "./Overview";
-
-const LANG_LABEL: Record<string, string> = { en: "English", pid: "Pidgin", yo: "Yoruba", ha: "Hausa", ig: "Igbo" };
+import { IconBeaker, IconPlay, IconStop } from "../icons";
+import { Badge, Button, Card, CardHeader, Empty, ErrorNote, LANG_LABEL, seconds, Spinner, Stat, VERDICT, VerdictBadge } from "../ui";
 
 export default function Tests() {
   const { sample, current, runs, running, runCases, stopRun, reviews } = useStore();
@@ -21,60 +19,68 @@ export default function Tests() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader
-          title="Test suite"
-          sub={`${cases.length} cases, each sent to N-ATLAS with business configuration v${current?.version ?? "?"}. Results are real replies; checks are heuristics; correctness is decided by human review.`}
-          right={
-            running ? (
-              <Button variant="secondary" onClick={stopRun}>Stop after this case</Button>
-            ) : (
-              <Button onClick={() => runCases(cases)} disabled={!current}>Run all {cases.length} cases</Button>
-            )
-          }
-        />
-        <div className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm text-slate-600">
-          {running ? (
-            <span className="flex items-center gap-2">
-              <Spinner className="text-forge-600" />
-              Running case {Math.min(Object.keys(running.results).length + 1, running.caseIds.length)} of {running.caseIds.length}… cases run one at a time.
-            </span>
-          ) : view ? (
-            <>
-              <label className="flex items-center gap-2">
-                <span>Showing run</span>
-                <select
-                  value={view.id}
-                  onChange={(e) => setViewId(e.target.value)}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
-                >
-                  {[...runs].reverse().map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {new Date(r.startedAt).toLocaleString()} — config v{r.configVersion}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {runs.length >= 2 && (
-                <Button variant="secondary" size="sm" onClick={() => setCompare(!compare)}>
-                  {compare ? "Hide comparison" : "Compare two runs"}
-                </Button>
+        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-sm text-slate-600">
+              <strong className="text-ink">{cases.length} cases</strong> sent to N-ATLAS with business configuration{" "}
+              <strong className="text-ink">v{current?.version ?? "?"}</strong>, one at a time, at temperature 0 so reruns are comparable.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+              {running ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="text-forge-600" />
+                  Running case {Math.min(Object.keys(running.results).length + 1, running.caseIds.length)} of {running.caseIds.length}…
+                </span>
+              ) : view ? (
+                <>
+                  <label className="flex items-center gap-2">
+                    <span className="text-slate-500">Run</span>
+                    <select
+                      value={view.id}
+                      onChange={(e) => setViewId(e.target.value)}
+                      className="rounded-md border-0 bg-white py-1 pl-2 pr-8 text-sm ring-1 ring-inset ring-slate-300"
+                    >
+                      {[...runs].reverse().map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {new Date(r.startedAt).toLocaleString()} — config v{r.configVersion}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {runs.length >= 2 && (
+                    <Button variant="secondary" size="sm" onClick={() => setCompare(!compare)}>
+                      {compare ? "Hide comparison" : "Compare two runs"}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <span className="text-slate-500">No runs yet.</span>
               )}
-            </>
+            </div>
+          </div>
+          {running ? (
+            <Button variant="secondary" onClick={stopRun}><IconStop className="h-4 w-4" /> Stop after this case</Button>
           ) : (
-            <span>No runs yet. A full run makes {cases.length} N-ATLAS calls.</span>
+            <Button size="lg" onClick={() => runCases(cases)} disabled={!current}><IconPlay className="h-4 w-4" /> Run all {cases.length} cases</Button>
           )}
         </div>
-        {view && !running && <div className="border-t border-slate-100 px-5 py-3 text-sm"><RunSummary run={view} /></div>}
+        {running && (
+          <div className="h-1 bg-slate-100">
+            <div className="h-1 bg-forge-500 transition-all" style={{ width: `${(Object.keys(running.results).length / running.caseIds.length) * 100}%` }} />
+          </div>
+        )}
       </Card>
+
+      {view && <RunStats run={view} total={cases.length} />}
 
       {compare && runs.length >= 2 && <Compare cases={cases} />}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
               <tr>
-                <th className="px-4 py-2.5 font-semibold">Test case</th>
+                <th className="py-2.5 pl-5 pr-4 font-semibold">Test case</th>
                 <th className="px-3 py-2.5 font-semibold">Language</th>
                 <th className="px-3 py-2.5 font-semibold">Request</th>
                 <th className="px-3 py-2.5 font-semibold">Time</th>
@@ -95,11 +101,12 @@ export default function Tests() {
                       className={`cursor-pointer hover:bg-slate-50 ${isOpen ? "bg-slate-50" : ""}`}
                       onClick={() => setExpanded(isOpen ? null : c.id)}
                     >
-                      <td className="px-4 py-3">
+                      <td className="relative py-3 pl-5 pr-4">
+                        <span className={`absolute inset-y-2 left-0 w-1 rounded-r ${r ? VERDICT[r.verdict].bar : "bg-slate-200"}`} aria-hidden />
                         <button className="text-left font-medium text-ink" aria-expanded={isOpen}>{c.title}</button>
                         <div className="text-xs text-slate-500">{c.category}</div>
                       </td>
-                      <td className="px-3 py-3">{LANG_LABEL[c.language]}</td>
+                      <td className="px-3 py-3"><span className="font-mono text-[11px] text-slate-400">{c.language.toUpperCase()}</span> {LANG_LABEL[c.language]}</td>
                       <td className="px-3 py-3">
                         {r ? (r.ok ? <Badge tone="green">Returned</Badge> : <Badge tone="red">Failed</Badge>) : pending ? <Spinner className="text-slate-400" /> : <span className="text-slate-400">—</span>}
                       </td>
@@ -118,7 +125,7 @@ export default function Tests() {
                     </tr>
                     {isOpen && (
                       <tr>
-                        <td colSpan={7} className="bg-white px-4 pb-5 pt-2">
+                        <td colSpan={7} className="border-t border-slate-100 bg-slate-50/60 px-5 pb-6 pt-4">
                           <CaseDetail c={c} r={r} run={view} />
                         </td>
                       </tr>
@@ -147,7 +154,7 @@ function CheckCount({ r }: { r?: AskResult }) {
 function CaseDetail({ c, r, run }: { c: TestCase; r?: AskResult; run?: Run }) {
   const { runCases, running } = useStore();
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div className="space-y-3 text-sm">
         <Field label="Customer message">
           <p className="rounded-md bg-slate-100 px-3 py-2 text-slate-900">{c.message}</p>
@@ -156,17 +163,17 @@ function CaseDetail({ c, r, run }: { c: TestCase; r?: AskResult; run?: Run }) {
         <Field label="Purpose">{c.purpose}</Field>
         <Field label="Expected behaviour">{c.expected}</Field>
         <Field label="Case-specific automated checks">
-          {c.checks.length ? `${c.checks.length} check(s), plus the two baseline checks run on every reply.` : "None — only the baseline checks run. A person must judge this reply."}
+          {c.checks.length ? `${c.checks.length} for this case, plus the checks run on every reply (language, citations, ₦ amounts, leaks).` : "None for this case. Only the checks run on every reply apply (language, citations, ₦ amounts, leaks), so a person must judge it."}
         </Field>
         <Button variant="secondary" size="sm" disabled={!!running} onClick={() => runCases([c])}>Run this case only</Button>
       </div>
       <div>
         {r && run ? (
-          <ResultView result={r} facts={[]} reviewId={reviewKey(`run:${run.id}`, c.id)} />
+          <ResultView result={r} reviewId={reviewKey(`run:${run.id}`, c.id)} />
         ) : running ? (
           <Empty title="Waiting for this case…" />
         ) : (
-          <Empty title="Not run in this run" />
+          <Empty title="Not run in this run" icon={<IconBeaker className="h-5 w-5" />} />
         )}
       </div>
     </div>
@@ -254,5 +261,25 @@ function Compare({ cases }: { cases: TestCase[] }) {
         })}
       </ul>
     </Card>
+  );
+}
+
+/** Counts from a recorded run. Nothing here is a score: just how many replies landed in each bucket. */
+function RunStats({ run, total }: { run: Run; total: number }) {
+  const { reviews } = useStore();
+  const results = Object.values(run.results);
+  const count = (v: string) => results.filter((r) => r.verdict === v).length;
+  const ok = results.filter((r) => r.ok);
+  const reviewed = run.caseIds.filter((id) => reviews[reviewKey(`run:${run.id}`, id)]).length;
+  const avg = ok.length ? ok.reduce((s, r) => s + r.latencyMs, 0) / ok.length : 0;
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <Stat label="Replies returned" value={`${ok.length}/${total}`} />
+      <Stat label="Passed checks" value={count("passed-checks")} tone="green" hint="All heuristic checks passed. Not proof of correctness." />
+      <Stat label="Failed a check" value={count("failed-check")} tone="red" />
+      <Stat label="Need review" value={count("needs-review")} tone="amber" />
+      <Stat label="Reviewed by you" value={`${reviewed}/${run.caseIds.length}`} tone="blue" />
+      <Stat label="Avg response" value={ok.length ? seconds(avg) : "—"} />
+    </div>
   );
 }

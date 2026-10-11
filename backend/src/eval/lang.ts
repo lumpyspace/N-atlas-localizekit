@@ -31,10 +31,10 @@ const CHARS: Partial<Record<LangCode, RegExp>> = {
 // handle accented letters like ẹ/ọ/ị.
 const words = (list: string) => new RegExp(`(?<!\\p{L})(?:${list})(?!\\p{L})`, "giu");
 const WORDS: Record<LangCode, RegExp> = {
-  en: words("the|and|is|are|you|your|with|this|that|for|can|will|should|have|it|of|to|in"),
+  en: words("the|and|is|are|you|your|with|this|that|for|can|will|should|have|it|of|to|in|closed|open|costs?|delivery|days|please|sorry|contact|yes"),
   pid: words("wetin|abeg|dey|una|wahala|sabi|comot|oga|dem|naim|fit|wan|go\\s+dey|no\\s+be|how\\s+far|small\\s+small|make\\s+you"),
   yo: words("mo|emi|ẹ|ti|naa|fun|wọn|àwọn|kò|àti|tó|yìí|ni|lati|láti|jẹ|ṣe|pẹlu|ìgbà|wa"),
-  ha: words("shi|ita|mu|su|amma|don|kuma|daga|wani|kamar|yana|tana|suna|akwai|zai|ne|ce|wannan|sosai"),
+  ha: words("shi|ita|mu|su|amma|don|kuma|daga|wani|kamar|yana|tana|suna|akwai|zai|ce|wannan|sosai|kudin|ku[ɗd]in|kai|kaya|zuwa|shine|nawa|yaya|ina|gode|sannu|ba|za"),
   ig: words("nke|ndi|bụ|dị|ihe|ebe|gị|unu|anyị|maka|kwa|nwere|ga-"),
 };
 

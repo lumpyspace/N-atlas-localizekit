@@ -83,7 +83,7 @@ interface StoreValue {
   status: Status | null;
   connection: ConnectionCheck | null;
   checking: boolean;
-  checkConnection: () => Promise<void>;
+  checkConnection: () => Promise<ConnectionCheck>;
 
   runs: Run[];
   running: Run | null;
@@ -97,6 +97,10 @@ interface StoreValue {
   playground: PlaygroundEntry[];
   addPlayground: (e: PlaygroundEntry) => void;
   clearPlayground: () => void;
+
+  /** A message handed from the Overview's quick-try box to the Playground. */
+  queued: { message: string; language: LangCode } | null;
+  setQueued: (q: { message: string; language: LangCode } | null) => void;
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -117,6 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [connection, setConnection] = useState<ConnectionCheck | null>(null);
   const [checking, setChecking] = useState(false);
   const [running, setRunning] = useState<Run | null>(null);
+  const [queued, setQueued] = useState<{ message: string; language: LangCode } | null>(null);
   const stopRef = useRef(false);
 
   useEffect(() => save(persisted), [persisted]);
@@ -135,6 +140,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     api.status().then(setStatus).catch(() => setStatus(null));
   }, []);
 
+  // Wake N-ATLAS as soon as someone opens the app: the GPU sleeps when idle and
+  // takes a few minutes to start, so begin while the visitor reads the page.
+  // This is one small real request; its result is shown as the connection status.
+  const woke = useRef(false);
+  useEffect(() => {
+    if (status?.configured && !woke.current) {
+      woke.current = true;
+      // A cold start can outlast one request; try once more if the first fails.
+      void checkConnection().then((r) => (r.ok ? r : checkConnection()));
+    }
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const current = persisted.versions[persisted.versions.length - 1] ?? null;
 
   const saveConfig = useCallback((business: BusinessConfig, policy: string, note: string) => {
@@ -151,13 +168,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const checkConnection = useCallback(async () => {
     setChecking(true);
+    let result: ConnectionCheck;
     try {
-      setConnection(await api.checkConnection());
+      result = await api.checkConnection();
     } catch (e: any) {
-      setConnection({ ok: false, model: status?.model ?? "", latencyMs: 0, reply: "", error: e.message, checkedAt: new Date().toISOString() });
-    } finally {
-      setChecking(false);
+      result = { ok: false, model: status?.model ?? "", latencyMs: 0, reply: "", error: e.message, checkedAt: new Date().toISOString() };
     }
+    setConnection(result);
+    setChecking(false);
+    return result;
   }, [status]);
 
   const runCases = useCallback(async (cases: TestCase[]) => {
@@ -214,6 +233,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     playground: persisted.playground,
     addPlayground: (e) => setPersisted((p) => ({ ...p, playground: [...p.playground, e] })),
     clearPlayground: () => setPersisted((p) => ({ ...p, playground: [] })),
+    queued,
+    setQueued,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

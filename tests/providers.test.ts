@@ -85,3 +85,26 @@ test("provider is never flagged as mock", () => {
   assert.equal(p.isMock, false);
   assert.equal(p.name, "http");
 });
+
+test("generate retries once when the connection drops, then succeeds", async () => {
+  let calls = 0;
+  const server: Server = createServer((req, res) => {
+    calls++;
+    if (calls === 1) {
+      req.socket.destroy(); // simulate the GPU server dropping the connection
+      return;
+    }
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ model: "NCAIR1/N-ATLaS", choices: [{ message: { content: "ok" } }] }));
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const { port } = server.address() as AddressInfo;
+  try {
+    const p = new HttpNAtlasProvider({ endpoint: `http://127.0.0.1:${port}/v1`, apiKey: "", model: "m", timeoutMs: 5000 });
+    const r = await p.generate("hi");
+    assert.equal(r.text, "ok");
+    assert.equal(calls, 2);
+  } finally {
+    server.close();
+  }
+});

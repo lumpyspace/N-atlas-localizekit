@@ -109,7 +109,7 @@ export function localizeRouter(provider: NAtlasProvider, config: AppConfig): Rou
     const business = validateBusiness(req.body?.business, SAMPLE_BUSINESS);
     const policy = validatePolicy(req.body?.policy, DEFAULT_POLICY);
     if (limited(req, res)) return;
-    res.json(await ask(provider, { message, language, business, policy, checks }));
+    res.json(await ask(provider, { message, language, business, policy, checks, temperature: 0 }));
   }));
 
   return router;

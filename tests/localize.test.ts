@@ -149,3 +149,24 @@ test("rate limiter blocks after the limit and resets after the window", () => {
   assert.equal(rl.take("b", 2).allowed, true);
   assert.equal(rl.take("a", 1001).allowed, true);
 });
+
+// Real N-ATLAS replies recorded on 2026-10-11 (hosted run 1).
+test("language check: Yoruba reply to a Pidgin question fails; Hausa reply to Hausa passes", async () => {
+  const { languageCheck } = await import("../backend/src/localize/checks.ts");
+  const yorubaReply = "Kan si eniyan: WhatsApp 0800 000 0000 (nọmba iro), imeeli support@asostyle.example.";
+  assert.equal(languageCheck(yorubaReply, "pid").pass, false);
+  assert.equal(languageCheck("Kudin kai kaya zuwa Abuja ₦5,500 ne.", "ha").pass, true);
+  assert.equal(languageCheck("Kudin kai kaya zuwa Abuja shine ₦5,500.", "ha").pass, true);
+  assert.match(languageCheck("₦5,500.", "ha").detail, /check it manually/);
+  assert.equal(languageCheck("[F9] (Opening hours) Sunday: Closed.", "yo").pass, false);
+  const mixed = "Kan si eniyan: WhatsApp 0800 000 0000 (nọmba iro), imeeli support@asostyle.example. A human agent replies during opening hours, Monday to Saturday.";
+  assert.equal(languageCheck(mixed, "pid").pass, false);
+  assert.equal(languageCheck("Delivery to Abuja costs ₦5,500 and takes 3–5 business days.", "pid").pass, true);
+});
+
+test("citation check flags a fact number that does not exist", () => {
+  const bad = baselineChecks("Yes, AsoStyle Boutique sells children's school uniforms. [F99]", B, built).find((c) => c.id === "valid-citations")!;
+  assert.equal(bad.pass, false);
+  const good = baselineChecks("Sunday: Closed. [F9]", B, built).find((c) => c.id === "valid-citations")!;
+  assert.equal(good.pass, true);
+});

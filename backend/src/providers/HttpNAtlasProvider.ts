@@ -107,12 +107,23 @@ export class HttpNAtlasProvider implements NAtlasProvider {
       };
       if (this.cfg.apiKey) headers.authorization = `Bearer ${this.cfg.apiKey}`;
 
-      const res = await fetch(this.chatUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      const send = () =>
+        fetch(this.chatUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+      let res: Response;
+      try {
+        res = await send();
+      } catch (err) {
+        // A dropped connection (not a timeout or a stop) gets one retry: the
+        // GPU server can recycle a container mid-request.
+        if (controller.signal.aborted) throw err;
+        logger.warn("N-ATLAS connection dropped; retrying once", { cause: networkCause(err) });
+        res = await send();
+      }
 
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
@@ -156,7 +167,7 @@ export class HttpNAtlasProvider implements NAtlasProvider {
       }
       if (external?.aborted) throw new Error("Stopped by user.");
       const message = err instanceof Error ? err.message : String(err);
-      logger.error("N-ATLAS generate() failed", { reason: message });
+      logger.error("N-ATLAS generate() failed", { reason: message, cause: networkCause(err) });
       throw err instanceof Error ? err : new Error(message);
     } finally {
       clearTimeout(timer);
@@ -203,12 +214,23 @@ export class HttpNAtlasProvider implements NAtlasProvider {
       };
       if (this.cfg.apiKey) headers.authorization = `Bearer ${this.cfg.apiKey}`;
 
-      const res = await fetch(this.chatUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+      const send = () =>
+        fetch(this.chatUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+      let res: Response;
+      try {
+        res = await send();
+      } catch (err) {
+        // A dropped connection (not a timeout or a stop) gets one retry: the
+        // GPU server can recycle a container mid-request.
+        if (controller.signal.aborted) throw err;
+        logger.warn("N-ATLAS connection dropped; retrying once", { cause: networkCause(err) });
+        res = await send();
+      }
 
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
@@ -317,4 +339,10 @@ export class HttpNAtlasProvider implements NAtlasProvider {
       return { ...base, ok: false, detail: `Could not reach N-ATLAS: ${message}` };
     }
   }
+}
+
+/** The low-level reason behind Node's generic "fetch failed" (e.g. ECONNRESET). */
+function networkCause(err: unknown): string | undefined {
+  const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
+  return cause ? (cause.code ?? cause.message) : undefined;
 }

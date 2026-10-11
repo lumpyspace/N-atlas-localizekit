@@ -38,7 +38,7 @@ export default function Config() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="space-y-6">
         <Card>
           <CardHeader

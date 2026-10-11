@@ -2,17 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Subtle page background: a faint grid wash, like modern dev dashboards. */
-#root {
-  min-height: 100vh;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    rgba(15, 23, 42, 0.035) 1px,
-    transparent 0
-  );
-  background-size: 22px 22px;
+body {
+  @apply bg-slate-50 font-sans text-slate-800 antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Thin, quiet scrollbars inside panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out both;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-pulse-dot, .animate-spin { animation: none; }
 }

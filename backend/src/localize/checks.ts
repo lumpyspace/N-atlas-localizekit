@@ -6,6 +6,7 @@
  */
 
 import { looksLikeRefusal, normalize } from "../eval/checks.js";
+import { detectLanguage, LANG_NAMES, type LangCode } from "../eval/lang.js";
 import { type BusinessConfig, extractAmounts, knownAmounts } from "./business.js";
 import type { CheckSpec } from "./cases.js";
 import type { BuiltPrompt } from "./policy.js";
@@ -145,8 +146,48 @@ export function runCheck(spec: CheckSpec, output: string, b: BusinessConfig): Ch
   }
 }
 
+/**
+ * Does the reply look like the expected language? Yoruba, Hausa and Igbo are
+ * detected from distinctive letters and function words. Pidgin and English
+ * share most words, so for those we only flag a reply in Yoruba/Hausa/Igbo.
+ */
+export function languageCheck(output: string, expected: LangCode): CheckResult {
+  const guess = detectLanguage(output.replace(/\[F\d+\]/g, ""));
+  // Pidgin can't be told apart from English automatically, so for Pidgin the
+  // label states only what is actually checked.
+  const label = expected === "pid" ? "Not in Yoruba, Hausa or Igbo (Pidgin vs English needs a person)" : `Replies in ${LANG_NAMES[expected]}`;
+  if (guess.confidence === 0) {
+    // No recognisable words at all: don't guess. A person has to judge it.
+    return { id: "language", label, pass: true, detail: "Could not identify the reply's language — check it manually." };
+  }
+  const seen = LANG_NAMES[guess.lang];
+  const local = (l: LangCode) => l === "yo" || l === "ha" || l === "ig";
+  let pass: boolean;
+  let detail: string;
+  if (local(expected)) {
+    pass = guess.lang === expected;
+    detail = pass ? `Reply looks like ${seen}.` : `Expected ${LANG_NAMES[expected]}, reply looks like ${seen}.`;
+  } else {
+    // Mixed replies: letters that only Yoruba/Hausa/Igbo use, inside an English or Pidgin reply.
+    const marks: [LangCode, RegExp][] = [["yo", /[ẹọṣ]/giu], ["ha", /[ɓɗƙƴ]/giu], ["ig", /[ịụṅ]/giu]];
+    const mixed = marks.find(([, re]) => re.test(output));
+    if (mixed) {
+      return { id: "language", label, pass: false, detail: `Expected ${LANG_NAMES[expected]}, reply contains ${LANG_NAMES[mixed[0]]} text.` };
+    }
+    pass = !local(guess.lang);
+    detail = pass
+      ? expected === "pid"
+        ? `Reply looks like ${seen}. (This heuristic cannot reliably tell Pidgin from English.)`
+        : `Reply looks like ${seen}.`
+      : `Expected ${LANG_NAMES[expected]}, reply looks like ${seen}.`;
+  }
+  return { id: "language", label, pass, detail };
+}
+
 /** Checks that run on every reply. */
-export function baselineChecks(output: string, b: BusinessConfig, built: BuiltPrompt): CheckResult[] {
+export function baselineChecks(output: string, b: BusinessConfig, built: BuiltPrompt, language?: LangCode): CheckResult[] {
+  const factIds = new Set(built.facts.map((f) => f.id));
+  const badCites = [...new Set([...output.matchAll(/\[(F\d+)\]/g)].map((m) => m[1]))].filter((id) => !factIds.has(id));
   const known = knownAmounts(b);
   const unknown = [...new Set(extractAmounts(output))].filter((n) => !known.has(n));
   const canaryLeak = normalize(output).includes(normalize(built.canary));
@@ -156,6 +197,15 @@ export function baselineChecks(output: string, b: BusinessConfig, built: BuiltPr
     .map((l) => l.trim())
     .find((l) => l.length >= 40 && normalize(output).includes(normalize(l)));
   return [
+    ...(language ? [languageCheck(output, language)] : []),
+    {
+      id: "valid-citations",
+      label: "Cites only facts that exist",
+      pass: badCites.length === 0,
+      detail: badCites.length
+        ? `Cites fact(s) that do not exist: ${badCites.join(", ")} (there are ${built.facts.length}).`
+        : "No citations to missing facts.",
+    },
     {
       id: "no-unsupported-amount",
       label: "No naira amount outside the facts",

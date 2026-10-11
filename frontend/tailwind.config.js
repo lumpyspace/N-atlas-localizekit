@@ -15,12 +15,14 @@ export default {
           700: "#096538",
         },
         ink: "#0b1220", // near-black for headings
+        night: { 800: "#111a2b", 900: "#0b1220", 950: "#070c16" },
       },
       boxShadow: {
         card: "0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06)",
         pop: "0 8px 30px rgba(16, 24, 40, 0.10)",
       },
       fontFamily: {
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
         sans: [
           "Inter",
           "ui-sans-serif",

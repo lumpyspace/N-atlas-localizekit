@@ -29,7 +29,7 @@ await esbuild.build({
   outfile: join(fn, "index.cjs"),
   bundle: true,
   platform: "node",
-  target: "node20",
+  target: "node22",
   format: "cjs",
   footer: { js: "module.exports = module.exports.default;" },
   logLevel: "info",
@@ -37,7 +37,7 @@ await esbuild.build({
 
 writeFileSync(
   join(fn, ".vc-config.json"),
-  JSON.stringify({ runtime: "nodejs20.x", handler: "index.cjs", launcherType: "Nodejs", maxDuration: 300 }, null, 2),
+  JSON.stringify({ runtime: "nodejs22.x", handler: "index.cjs", launcherType: "Nodejs", maxDuration: 300 }, null, 2),
 );
 
 const securityHeaders = {
@@ -46,7 +46,7 @@ const securityHeaders = {
   "X-Frame-Options": "DENY",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
 };
 
 writeFileSync(

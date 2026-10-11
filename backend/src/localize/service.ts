@@ -120,7 +120,15 @@ function friendlyError(err: unknown): string {
 
 export async function ask(
   provider: NAtlasProvider,
-  args: { message: string; language: LangCode; business: BusinessConfig; policy: string; checks?: CheckSpec[] },
+  args: {
+    message: string;
+    language: LangCode;
+    business: BusinessConfig;
+    policy: string;
+    checks?: CheckSpec[];
+    /** 0 for test runs, so before/after differences come from config changes, not sampling. */
+    temperature?: number;
+  },
 ): Promise<AskResult> {
   const built = buildSystemPrompt(args.policy, args.business);
   const base = {
@@ -134,13 +142,13 @@ export async function ask(
   try {
     const r = await provider.generate(args.message, {
       system: built.system,
-      temperature: 0.2,
+      temperature: args.temperature ?? 0.2,
       maxTokens: MAX_REPLY_TOKENS,
     });
     const output = r.text.trim();
     const checks = [
       ...(args.checks ?? []).map((c) => runCheck(c, output, args.business)),
-      ...baselineChecks(output, args.business, built),
+      ...baselineChecks(output, args.business, built, args.language),
     ];
     const specific = (args.checks ?? []).length > 0;
     const verdict: Verdict = checks.some((c) => !c.pass)
