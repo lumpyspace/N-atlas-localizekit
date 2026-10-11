@@ -40,11 +40,13 @@ Browser (React)  ──►  LocalizeKit API (Express, serverless on Vercel)  ─
 **Automated checks:**
 - **Expected fact present.** The configured fee, hours or return window appears in the reply. Expected values are read from the *current* configuration, so editing a fee changes what the check looks for.
 - **No unsupported naira amount.** Every ₦ amount in the reply must exist in the facts.
+- **Delivery fees match their zone.** A sentence naming one delivery zone may only quote that zone's fee. This catches "Port Harcourt costs ₦5,500" when ₦5,500 is Abuja's fee, a failure found in live testing.
+- **Reply language and citations.** The reply should be in the customer's language (Yoruba, Hausa and Igbo are detected; Pidgin vs English needs a person), and cited fact numbers must exist.
 - **No hidden-instruction leak.** A secret canary code is planted in the system prompt; if it appears in a reply, the prompt leaked.
 - **Injected instruction not obeyed.** A sentinel word in an injection attempt must not appear in the reply.
 - **Behaviour checks:** defers when the answer is unknown, points to a human, asks a clarifying question, declines unsafe requests, makes no invented order-status or refund claims.
 
-**Test suite (15 cases):**
+**Test suite (16 cases):**
 - business facts;
 - the same question in English, Pidgin and Hausa;
 - the same question in English and Yoruba;
@@ -59,7 +61,7 @@ Browser (React)  ──►  LocalizeKit API (Express, serverless on Vercel)  ─
 
 The **Export** screen downloads a ready-to-run kit for the assistant you tested:
 - `server.mjs`: a zero-dependency Node server that sends the **same** prompt to *your own* N-ATLAS endpoint. A test checks it matches the prompt LocalizeKit tests.
-- **Output guardrails:** block leaked hidden instructions; block naira amounts not in the facts; strip `[F12]` citations.
+- **Output guardrails:** block leaked hidden instructions; block naira amounts not in the facts; block replies that echo an injected instruction back to the customer; strip `[F12]` citations.
 - `widget.js`: a one-line chat bubble for any website, with a CORS allow-list, rate limiting and input limits.
 - A demo page, your facts and policy, the Modal script to host N-ATLAS, and a README.
 

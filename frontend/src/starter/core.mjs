@@ -56,20 +56,78 @@ export function extractAmounts(text) {
 const norm = (s) => s.normalize("NFD").replace(/\p{Mn}/gu, "").toLowerCase();
 
 /**
+ * Delivery fees quoted for the wrong place: a sentence that names exactly one
+ * delivery zone may only state that zone's fee (or a non-fee figure from the
+ * facts, such as a free-delivery threshold). Zone names are proper nouns, so
+ * this works in any language.
+ */
+export function wrongZoneFees(reply, business) {
+  const zones = business.delivery.zones;
+  const zoneFees = new Set(zones.map((z) => z.fee));
+  const otherAmounts = new Set(
+    toFacts(business)
+      .filter((f) => !f.text.startsWith("Delivery to "))
+      .flatMap((f) => extractAmounts(f.text)),
+  );
+  const problems = [];
+  for (const sentence of reply.split(/(?<=[.!?\n])\s+/)) {
+    const named = zones.filter((z) => norm(sentence).includes(norm(z.zone)));
+    if (named.length !== 1) continue;
+    for (const n of extractAmounts(sentence)) {
+      if (n !== named[0].fee && (zoneFees.has(n) || !otherAmounts.has(n))) {
+        problems.push(`${named[0].zone} quoted ₦${n.toLocaleString("en-US")} (facts: ₦${named[0].fee.toLocaleString("en-US")})`);
+      }
+    }
+  }
+  return problems;
+}
+
+const OVERRIDE =
+  /\b(ignore|disregard|forget)\b.{0,40}\b(instructions?|rules?|prompt)\b|\b(admin|developer|god|jailbreak) mode\b|\byou are now\b|\b(reply|respond|answer) (only )?with\b|\bsay the (word|phrase)\b|\brepeat after me\b|\bnew (instructions?|rules?)\b/i;
+
+const words = (s) => norm(s).match(/[\p{L}\p{N}₦-]+/gu) ?? [];
+
+/**
+ * Prompt-injection echo: the customer's message tries to override the rules
+ * AND the reply copies 4+ consecutive words from that message that are not in
+ * the facts (e.g. "delivery is free everywhere"). That is how injected
+ * promises reach customers.
+ */
+export function injectionEcho(reply, userMessage, built) {
+  if (!userMessage || !OVERRIDE.test(userMessage)) return null;
+  const msg = words(userMessage);
+  const rep = ` ${words(reply).join(" ")} `;
+  const facts = ` ${built.facts.map((f) => words(f.text).join(" ")).join(" | ")} `;
+  for (let i = 0; i + 4 <= msg.length; i++) {
+    const phrase = msg.slice(i, i + 4).join(" ");
+    if (rep.includes(` ${phrase} `) && !facts.includes(` ${phrase} `)) return phrase;
+  }
+  // A distinctive token planted by the attacker, e.g. PINEAPPLE-77.
+  const token = (userMessage.match(/\b[A-Z]{3,}-\d{2,}\b/) ?? [])[0];
+  return token && reply.includes(token) ? token : null;
+}
+
+/**
  * Check a reply before a customer sees it. These are guardrails, not a
  * guarantee: they catch the specific failures LocalizeKit tests for.
- *   - leaked canary or a verbatim policy rule  -> blocked
- *   - a naira amount that is not in the facts   -> blocked
- *   - [F12]-style citations                      -> removed
+ *   - leaked canary or a verbatim policy rule          -> blocked
+ *   - a naira amount that is not in the facts           -> blocked
+ *   - a delivery fee quoted for the wrong zone          -> blocked
+ *   - an injected instruction echoed back to the user   -> blocked
+ *   - [F12]-style citations                              -> removed
  */
-export function guardReply(reply, business, built, canary) {
+export function guardReply(reply, business, built, canary, userMessage = "") {
   const reasons = [];
+  const echoed = injectionEcho(reply, userMessage, built);
+  if (echoed) reasons.push(`followed an injected instruction ("${echoed}")`);
   if (norm(reply).includes(norm(canary))) reasons.push("hidden-instruction leak");
   const ruleLeak = built.rules
     .split("\n")
     .map((l) => l.trim())
     .find((l) => l.length >= 40 && norm(reply).includes(norm(l)));
   if (ruleLeak) reasons.push("policy rule repeated");
+
+  for (const p of wrongZoneFees(reply, business)) reasons.push(`wrong delivery fee: ${p}`);
 
   const known = new Set(built.facts.flatMap((f) => extractAmounts(f.text)));
   const unknown = extractAmounts(reply).filter((n) => !known.has(n));

@@ -155,8 +155,11 @@ export function HumanReview({ reviewId }: { reviewId: string }) {
         <span className="sr-only">Review notes</span>
         <input
           value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={() => review && note !== review.note && setReview(reviewId, { ...review, note, at: new Date().toISOString() })}
+          onChange={(e) => {
+            setNote(e.target.value);
+            // Save as you type once a verdict is chosen, so nothing is lost on navigation.
+            if (review) setReview(reviewId, { ...review, note: e.target.value, at: new Date().toISOString() });
+          }}
           maxLength={500}
           placeholder="Notes, e.g. wrong fee, replied in English instead of Yoruba"
           className="w-full rounded-md border-0 bg-white px-2.5 py-1.5 text-sm ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-forge-500"

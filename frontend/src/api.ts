@@ -90,13 +90,19 @@ export interface ConnectionCheck {
 }
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`/api${path}`, body === undefined
-      ? {}
-      : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  } catch {
-    throw new Error("Could not reach the LocalizeKit server. Check your connection and try again.");
+  const init: RequestInit = body === undefined
+    ? {}
+    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+  let res: Response | undefined;
+  // Network blips (DNS, dropped mobile data) get two retries. Every API call is
+  // safe to repeat: none of them change anything on the server.
+  for (let attempt = 0; !res; attempt++) {
+    try {
+      res = await fetch(`/api${path}`, init);
+    } catch {
+      if (attempt >= 2) throw new Error("Could not reach the LocalizeKit server. Check your connection and try again.");
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok && !(res.status === 503 && path === "/status/check")) {

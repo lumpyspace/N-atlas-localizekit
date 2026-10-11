@@ -107,11 +107,18 @@
       typing.textContent = "Still working: the first reply after a quiet period can take a couple of minutes.";
     }, 8000);
 
-    fetch(endpoint + "/api/chat", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message: text, history: history }),
-    })
+    var request = function () {
+      return fetch(endpoint + "/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: text, history: history }),
+      });
+    };
+    // One retry after a network blip (common on mobile data).
+    request()
+      .catch(function () {
+        return new Promise(function (r) { setTimeout(r, 1500); }).then(request);
+      })
       .then(function (r) {
         return r.json().then(function (d) {
           if (!r.ok) throw new Error(d.error || "Something went wrong.");

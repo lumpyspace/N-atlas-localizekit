@@ -75,6 +75,7 @@ export const reviewKey = (scope: string, id: string) => `${scope}:${id}`;
 interface StoreValue {
   sample: Sample | null;
   loadError: string | null;
+  reload: () => Promise<void>;
   current: ConfigVersion | null;
   versions: ConfigVersion[];
   saveConfig: (business: BusinessConfig, policy: string, note: string) => void;
@@ -126,19 +127,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => save(persisted), [persisted]);
 
-  useEffect(() => {
-    api.sample()
-      .then((s) => {
-        setSample(s);
-        setPersisted((p) =>
-          p.versions.length
-            ? p
-            : { ...p, versions: [{ version: 1, savedAt: new Date().toISOString(), note: "Sample configuration", business: s.business, policy: s.policy }] },
-        );
-      })
-      .catch((e) => setLoadError(e.message));
-    api.status().then(setStatus).catch(() => setStatus(null));
+  // First load. A cold serverless function can fail once, so retry before giving up.
+  const loadAll = useCallback(async () => {
+    setLoadError(null);
+    const retry = async <T,>(fn: () => Promise<T>): Promise<T> => {
+      for (let i = 0; ; i++) {
+        try {
+          return await fn();
+        } catch (e) {
+          if (i >= 2) throw e;
+          await new Promise((r) => setTimeout(r, 1000 * (i + 1) * 2));
+        }
+      }
+    };
+    await Promise.all([
+      retry(api.sample)
+        .then((s) => {
+          setSample(s);
+          setPersisted((p) =>
+            p.versions.length
+              ? p
+              : { ...p, versions: [{ version: 1, savedAt: new Date().toISOString(), note: "Sample configuration", business: s.business, policy: s.policy }] },
+          );
+        })
+        .catch((e) => setLoadError(e.message)),
+      retry(api.status).then(setStatus).catch(() => setStatus(null)),
+    ]);
   }, []);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
 
   // Wake N-ATLAS as soon as someone opens the app: the GPU sleeps when idle and
   // takes a few minutes to start, so begin while the visitor reads the page.
@@ -209,6 +228,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: StoreValue = {
     sample,
     loadError,
+    reload: loadAll,
     current,
     versions: persisted.versions,
     saveConfig,

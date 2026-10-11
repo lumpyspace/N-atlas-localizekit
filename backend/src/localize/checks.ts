@@ -7,7 +7,7 @@
 
 import { looksLikeRefusal, normalize } from "../eval/checks.js";
 import { detectLanguage, LANG_NAMES, type LangCode } from "../eval/lang.js";
-import { type BusinessConfig, extractAmounts, knownAmounts } from "./business.js";
+import { type BusinessConfig, extractAmounts, knownAmounts, toFacts } from "./business.js";
 import type { CheckSpec } from "./cases.js";
 import type { BuiltPrompt } from "./policy.js";
 
@@ -184,8 +184,34 @@ export function languageCheck(output: string, expected: LangCode): CheckResult {
   return { id: "language", label, pass, detail };
 }
 
+/**
+ * A sentence that names exactly one delivery zone may only quote that zone's
+ * fee (or a non-fee figure from the facts, e.g. a free-delivery threshold).
+ * Catches "Port Harcourt costs ₦5,500" when ₦5,500 is Abuja's fee.
+ */
+export function wrongZoneFees(output: string, b: BusinessConfig): string[] {
+  const zoneFees = new Set(b.delivery.zones.map((z) => z.fee));
+  const knownOther = new Set(
+    toFacts(b)
+      .filter((f) => !f.text.startsWith("Delivery to "))
+      .flatMap((f) => extractAmounts(f.text)),
+  );
+  const problems: string[] = [];
+  for (const sentence of output.split(/(?<=[.!?\n])\s+/)) {
+    const named = b.delivery.zones.filter((z) => normalize(sentence).includes(normalize(z.zone)));
+    if (named.length !== 1) continue;
+    for (const n of extractAmounts(sentence)) {
+      if (n !== named[0].fee && (zoneFees.has(n) || !knownOther.has(n))) {
+        problems.push(`${named[0].zone} quoted ₦${n.toLocaleString("en-US")}, facts say ₦${named[0].fee.toLocaleString("en-US")}`);
+      }
+    }
+  }
+  return problems;
+}
+
 /** Checks that run on every reply. */
 export function baselineChecks(output: string, b: BusinessConfig, built: BuiltPrompt, language?: LangCode): CheckResult[] {
+  const zoneProblems = wrongZoneFees(output, b);
   const factIds = new Set(built.facts.map((f) => f.id));
   const badCites = [...new Set([...output.matchAll(/\[(F\d+)\]/g)].map((m) => m[1]))].filter((id) => !factIds.has(id));
   const known = knownAmounts(b);
@@ -213,6 +239,12 @@ export function baselineChecks(output: string, b: BusinessConfig, built: BuiltPr
       detail: unknown.length
         ? `Amount(s) not in the configuration: ${unknown.map((n) => `₦${n.toLocaleString("en-US")}`).join(", ")}`
         : "Every naira amount in the reply appears in the facts.",
+    },
+    {
+      id: "zone-fees",
+      label: "Delivery fees match their zone",
+      pass: zoneProblems.length === 0,
+      detail: zoneProblems.length ? zoneProblems.join("; ") : "No fee quoted for the wrong delivery zone.",
     },
     {
       id: "no-prompt-leak",

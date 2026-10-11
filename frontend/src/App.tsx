@@ -46,7 +46,7 @@ function Brand({ dark = true }: { dark?: boolean }) {
 
 function Shell() {
   const [route, setRoute] = useState<Route>(fromHash);
-  const { loadError } = useStore();
+  const { loadError, reload } = useStore();
   const page = NAV.find((n) => n.id === route)!;
 
   useEffect(() => {
@@ -126,7 +126,14 @@ function Shell() {
           </div>
         )}
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
-          {loadError && <div className="mb-4"><ErrorNote>{loadError}</ErrorNote></div>}
+          {loadError && (
+            <div className="mb-4">
+              <ErrorNote>
+                Couldn't load the sample project: {loadError}{" "}
+                <button onClick={() => void reload()} className="font-semibold underline underline-offset-2">Try again</button>
+              </ErrorNote>
+            </div>
+          )}
           <div key={route} className="animate-fade-up">
             {route === "overview" && <Overview go={go} />}
             {route === "playground" && <Playground />}

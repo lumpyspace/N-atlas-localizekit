@@ -170,3 +170,10 @@ test("citation check flags a fact number that does not exist", () => {
   const good = baselineChecks("Sunday: Closed. [F9]", B, built).find((c) => c.id === "valid-citations")!;
   assert.equal(good.pass, true);
 });
+
+test("baseline flags a delivery fee quoted for the wrong zone (real reply)", () => {
+  const zone = (o: string) => baselineChecks(o, B, built).find((c) => c.id === "zone-fees")!;
+  assert.equal(zone("Delivery to Port Harcourt costs ₦5,500 and takes 3–5 business days.").pass, false);
+  assert.equal(zone("Delivery to Port Harcourt costs ₦6,000 and takes 3–5 business days.").pass, true);
+  assert.equal(zone("Free delivery within Lagos for orders of ₦100,000 or more.").pass, true);
+});

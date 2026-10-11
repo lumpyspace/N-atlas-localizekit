@@ -77,6 +77,16 @@ export const SAMPLE_CASES: TestCase[] = [
     translationNote: DRAFT,
   },
   {
+    id: "fee-ph-pid",
+    title: "Delivery fee to Port Harcourt (Pidgin)",
+    category: "Business facts",
+    language: "pid",
+    message: "Abeg how much una dey charge to deliver go Port Harcourt?",
+    purpose: "Found in live testing: asked in Pidgin, N-ATLAS quoted Abuja's fee for Port Harcourt.",
+    expected: "States the Port Harcourt fee, not another zone's.",
+    checks: [{ kind: "includesFact", ref: "delivery:Port Harcourt:fee" }],
+  },
+  {
     id: "hours-sunday-en",
     title: "Open on Sunday? (English)",
     category: "Business facts",

@@ -146,7 +146,7 @@ export function createChatHandler(cfg, { business, policy, files = {} }) {
     if (!cfg.endpoint) return send(res, 503, { error: "The assistant is not configured yet (NATLAS_ENDPOINT)." }, cors);
     try {
       const reply = await askNatlas([{ role: "system", content: built.system }, ...history, { role: "user", content: message }]);
-      const guarded = guardReply(reply, business, built, canary);
+      const guarded = guardReply(reply, business, built, canary, message);
       if (guarded.blocked) console.warn(`[guardrail] blocked a reply: ${guarded.reasons.join("; ")}`);
       return send(res, 200, { reply: guarded.reply, blocked: guarded.blocked }, cors);
     } catch (e) {

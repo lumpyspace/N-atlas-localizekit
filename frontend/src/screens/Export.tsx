@@ -124,12 +124,12 @@ export default function Export() {
           <CardHeader icon={<IconShield className="h-4 w-4" />} title="What the server adds" />
           <ul className="space-y-3 px-5 py-4 text-sm text-slate-600">
             <li><strong className="text-ink">Same prompt you tested.</strong> The facts and policy are sent exactly as in LocalizeKit, so test results carry over.</li>
-            <li><strong className="text-ink">Output guardrails.</strong> Replies with a leaked hidden code or a ₦ amount that isn't in your facts are replaced with a hand-off to a person. Fact numbers like [F12] are removed.</li>
+            <li><strong className="text-ink">Output guardrails.</strong> Replies are replaced with a hand-off to a person when they leak the hidden code, state a ₦ amount that isn't in your facts, or echo an injected instruction back (e.g. "delivery is free everywhere" after "ignore previous instructions"). Fact numbers like [F12] are removed.</li>
             <li><strong className="text-ink">Keys stay server-side.</strong> The widget only talks to your server, which only accepts websites on your allow-list.</li>
             <li><strong className="text-ink">Limits.</strong> 1,000-character messages, six turns of history, per-visitor rate limit.</li>
           </ul>
           <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-            Guardrails catch the specific failures LocalizeKit tests for. They do not stop every wrong answer: in our tests a prompt injection still produced a false "free delivery" promise. Keep testing changes here before you ship them.
+            Guardrails catch specific, known failures. They do not stop every wrong answer: in our tests N-ATLAS also invented stock it doesn't have and sometimes replied in the wrong language. Keep testing changes here before you ship them.
           </div>
         </Card>
         <Card>
@@ -259,6 +259,7 @@ Optional attributes:
 **Before a reply reaches the customer, the server:**
 - **blocks** replies that contain the hidden canary code or repeat a policy rule word for word (prompt leaks);
 - **blocks** replies stating a naira amount that isn't in \`business.json\`;
+- **blocks** replies that echo an injected instruction: the message tries to override the rules ("ignore previous instructions", "admin mode", "reply with the word…") **and** the reply copies four or more of its words that aren't in the facts;
 - **removes** fact references such as \`[F12]\`.
 
 Blocked replies are replaced with a hand-off to your contact details and logged.
@@ -266,7 +267,7 @@ Blocked replies are replaced with a hand-off to your contact details and logged.
 **These checks catch specific, known failures. They do not make the assistant always right.** In LocalizeKit's tests, N-ATLAS sometimes:
 - answered questions the facts don't cover;
 - replied in a different language;
-- followed a prompt injection, including a false "free delivery" promise.
+- followed a prompt injection, including a false "free delivery" promise. The injection guardrail blocked that reply in our tests; differently worded attacks may still get through.
 
 Change \`business.json\` or \`policy.md\` in LocalizeKit, rerun the test suite, and export again.
 
